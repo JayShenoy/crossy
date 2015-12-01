@@ -171,12 +171,28 @@ function update () {
     var coin = coins[i];
     if(Phaser.Rectangle.intersects(chicken.getBounds(), coin.getBounds())) {
       coins.splice(i, 1);
-      coin.kill();
+
+      // Fade coin out
+      var tween = game.add.tween(coin);
+      tween.to({
+        alpha: 0
+      }, 500, Phaser.Easing.Quadratic.Out);
+      tween.onComplete.add(function () {
+        coin.kill();
+
+        // Check if all coins have been collected
+        if (coins.length == 0) {
+          game.lockRender = true;
+          alert('Level complete!');
+        }
+      });
+      tween.start();
     }
   }
 
+  // Revive this code later
   // Only check for key events if a key is not already being pressed
-  if (!pressed) {
+  /*if (!pressed) {
     if (cursors.up.isDown) {
       pressed = true;
       hopForward();
@@ -193,5 +209,5 @@ function update () {
       pressed = true;
       hopRight();
     }
-  }
+  }*/
 }

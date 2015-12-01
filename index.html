@@ -2,11 +2,139 @@
 <html>
   <head>
     <title>Hour of Code - Crossy</title>
+    <script src="js/phaser.min.js"></script>
+    <script src="js/acorn_interpreter.js"></script>
+    <script src="js/blockly_compressed.js"></script>
+    <script src="js/blocks_compressed.js"></script>
+    <script src="js/javascript_compressed.js"></script>
+    <script src="js/crossy_blocks.js"></script>
+    <script src="js/en.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        overflow: hidden;
+      }
+      table {
+        height: 100%;
+        width: 100%;
+      }
+      #blocklyArea {
+        height: 99%;
+      }
+    </style>
   </head>
   <body>
-    <div id="game"></div>
+    <table>
+      <tr>
+        <td style="width: 20%">
+          <div id="game"></div>
+          <button onclick="runCode()">Run</button>
+        </td>
 
-    <script src="js/phaser.min.js"></script>
+        <td style="width: 80%">
+          <div id="blocklyArea"></div>
+        </td>
+      </tr>
+    </table>
+
     <script src="main.js"></script>
+
+    <div id="blocklyDiv" style="position: absolute"></div>
+    <xml id="toolbox" style="display: none">
+      <block type="hop">
+        <field name="direction" value="Forward">forward</field>
+      </block>
+      <block type="hop">
+        <field name="direction">back</field>
+      </block>
+      <block type="hop">
+        <field name="direction">left</field>
+      </block>
+      <block type="hop">
+        <field name="direction">right</field>
+      </block>
+    </xml>
+    <script>
+      var blocklyArea = document.getElementById('blocklyArea');
+      var blocklyDiv = document.getElementById('blocklyDiv');
+      var workspace = Blockly.inject(blocklyDiv, {toolbox: document.getElementById('toolbox')});
+
+      // Always start with "when run" block
+      var xml_text = '<xml xmlns="http://www.w3.org/1999/xhtml"><block type="start" x="50" y="50"></block></xml>'
+      var xml = Blockly.Xml.textToDom(xml_text);
+      Blockly.Xml.domToWorkspace(workspace, xml);
+
+      var onresize = function(e) {
+        // Compute the absolute coordinates and dimensions of blocklyArea.
+        var element = blocklyArea;
+        var x = 0;
+        var y = 0;
+        do {
+          x += element.offsetLeft;
+          y += element.offsetTop;
+          element = element.offsetParent;
+        } while (element);
+        // Position blocklyDiv over blocklyArea.
+        blocklyDiv.style.left = x + 'px';
+        blocklyDiv.style.top = y + 'px';
+        blocklyDiv.style.width = blocklyArea.offsetWidth + 'px';
+        blocklyDiv.style.height = blocklyArea.offsetHeight + 'px';
+      };
+      window.addEventListener('resize', onresize, false);
+      onresize();
+
+      function initApi(interpreter, scope) {
+        // Add an API function for the hopForward() block
+        var wrapper = function () {
+          return interpreter.createPrimitive(hopForward());
+        };
+        interpreter.setProperty(scope, 'hopForward', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for the hopBack() block
+        wrapper = function () {
+          return interpreter.createPrimitive(hopBack());
+        };
+        interpreter.setProperty(scope, 'hopBack', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for the hopLeft() block
+        wrapper = function () {
+          return interpreter.createPrimitive(hopLeft());
+        };
+        interpreter.setProperty(scope, 'hopLeft', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for the hopRight() block
+        wrapper = function () {
+          return interpreter.createPrimitive(hopRight());
+        };
+        interpreter.setProperty(scope, 'hopRight', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for highlighting blocks
+        wrapper = function (id) {
+          id = id ? id.toString() : '';
+          return interpreter.createPrimitive(workspace.highlightBlock(id));
+        };
+        interpreter.setProperty(scope, 'highlightBlock', interpreter.createNativeFunction(wrapper));
+      }
+
+      var runCode = function () {
+        Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
+        Blockly.JavaScript.addReservedWords('highlightBlock');
+        var code = Blockly.JavaScript.workspaceToCode(workspace);
+        var myInterpreter = new Interpreter(code, initApi);
+        // Enable highlighting
+        workspace.traceOn(true);
+
+        // Execute code in 50 ms increments
+        function nextStep () {
+          if (myInterpreter.step()) {
+            window.setTimeout(nextStep, 50);
+          }
+        }
+        nextStep();
+      };
+    </script>
   </body>
 </html>
