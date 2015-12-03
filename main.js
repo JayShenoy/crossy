@@ -18,6 +18,10 @@ var cursors;
 // Storing whether or not a key is already pressed
 var pressed = false;
 var coins = [];
+var cars = [];
+var trees = [];
+// Group for depth sort
+var group;
 
 function preload () {
   game.load.spritesheet('chicken', 'assets/chicken.png', 58, 75);
@@ -51,45 +55,81 @@ function create () {
   road = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 5, 'road-no-lines');
   road.anchor.setTo(0.5, 1.0);
 
+  group = game.add.group();
+
   // Coins
-  var coin = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 2, 'coin');
-  coin.anchor.setTo(0.5, 1.0);
+  var coin = group.create(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 2 - 48, 'coin');
+  coin.anchor.setTo(0.5);
   coins.push(coin);
 
-  chicken = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 48, 'chicken');
-  chicken.anchor.setTo(0.5, 0.5);
-  chicken.frame = 0;
-
   // Cars
-  var car = game.add.sprite(0, 0, 'car-blue');
-  car.anchor.setTo(0, 0.5);
-  car.frame = 0;
-  car = game.add.sprite(GAME_WIDTH - 4 * 60, GAME_HEIGHT - 96, 'car-green');
-  car.anchor.setTo(0, 1.0);
-  car.frame = 1;
+  var car = group.create(90, 0, 'car-blue', 0);
+  car.anchor.setTo(0.5);
+  cars.push(car);
+  car = group.create(GAME_WIDTH - 2 * 60, GAME_HEIGHT - 96 * 2, 'car-green', 1);
+  car.anchor.setTo(0.5);
+  cars.push(car);
+  car = group.create(120, 96 * 2, 'car-orange', 1);
+  car.anchor.setTo(0.5);
+  cars.push(car);
 
   // Trees
-  var tree = game.add.sprite(GAME_WIDTH - 120 * 2, 192, 'tree-large');
-  tree.anchor.setTo(0, 1.0);
-  tree = game.add.sprite(GAME_WIDTH - 120, 192, 'tree-large');
-  tree.anchor.setTo(0, 1.0);
-  tree = game.add.sprite(60, 192, 'tree-small');
-  tree.anchor.setTo(0, 1.0);
-  tree = game.add.sprite(0, GAME_HEIGHT, 'tree-large');
-  tree.anchor.setTo(0, 1.0);
-  tree = game.add.sprite(GAME_WIDTH - 180, GAME_HEIGHT, 'tree-medium');
-  tree.anchor.setTo(0, 1.0);
+  var tree = group.create(GAME_WIDTH - 180, 96, 'tree-large');
+  tree.anchor.setTo(0.5);
+  trees.push(tree);
+  tree = group.create(GAME_WIDTH - 60, 96, 'tree-large');
+  tree.anchor.setTo(0.5);
+  trees.push(tree);
+  tree = group.create(120, 96, 'tree-small');
+  tree.anchor.setTo(0.5);
+  trees.push(tree);
+  tree = group.create(60, GAME_HEIGHT - 96, 'tree-large');
+  tree.anchor.setTo(0.5);
+  trees.push(tree);
+  tree = group.create(GAME_WIDTH - 120, GAME_HEIGHT - 96, 'tree-medium');
+  tree.anchor.setTo(0.5);
+  trees.push(tree);
 
-  car = game.add.sprite(0, 96 * 3, 'car-orange');
-  car.anchor.setTo(0, 1.0);
-  car.frame = 1;
+  chicken = group.create(GAME_WIDTH / 2, GAME_HEIGHT - 10, 'chicken', 0);
+  chicken.anchor.setTo(0.5, 1.0);
+
+  group.sort();
 
   // Game controls
   cursors = game.input.keyboard.createCursorKeys();
 }
 
+var checkCarCollision = function () {
+  for(var i = 0; i < cars.length; i++) {
+    var car = cars[i];
+
+    // Make sure that chicken isn't "colliding" with top of car
+    if(Phaser.Rectangle.intersects(chicken.getBounds(), car.getBounds())) {
+      if(chicken.y >= car.y) {
+        chicken.frame = 4;
+      }
+    }
+  }
+};
+
 var hopForward = function () {
   chicken.frame = 0;
+
+  // Don't hop if chicken will land on tree
+  for(var i = 0; i < trees.length; i++) {
+    var tree = trees[i];
+
+    // Tree coordinates for comparison purposes
+    var treeX1 = tree.x - 60;
+    var treeX2 = tree.x + 60;
+    var treeY1 = tree.y;
+    var treeY2 = tree.y + 96;
+
+    if(chicken.x >= treeX1 && chicken.x <= treeX2 && chicken.y - 96 >= treeY1 && chicken.y - 96 <= treeY2) {
+      return;
+    }
+  }
+
   var tween_1 = game.add.tween(chicken);
   tween_1.to({
     y: chicken.y - 104
@@ -104,11 +144,28 @@ var hopForward = function () {
   // Only allow user to press key when tween is complete
   tween_2.onComplete.add(function () {
     pressed = false;
+    checkCarCollision();
   });
 };
 
 var hopBack = function () {
   chicken.frame = 3;
+
+  // Don't hop if chicken will land on tree
+  for(var i = 0; i < trees.length; i++) {
+    var tree = trees[i];
+
+    // Tree coordinates for comparison purposes
+    var treeX1 = tree.x - 60;
+    var treeX2 = tree.x + 60;
+    var treeY1 = tree.y;
+    var treeY2 = tree.y + 96;
+
+    if(chicken.x >= treeX1 && chicken.x <= treeX2 && chicken.y + 96 >= treeY1 && chicken.y + 96 <= treeY2) {
+      return;
+    }
+  }
+
   var tween_1 = game.add.tween(chicken);
   tween_1.to({
     y: chicken.y + 104
@@ -122,11 +179,28 @@ var hopBack = function () {
 
   tween_2.onComplete.add(function () {
     pressed = false;
+    checkCarCollision();
   });
 };
 
 var hopLeft = function () {
   chicken.frame = 1;
+
+  // Don't hop if chicken will land on tree
+  for(var i = 0; i < trees.length; i++) {
+    var tree = trees[i];
+
+    // Tree coordinates for comparison purposes
+    var treeX1 = tree.x - 60;
+    var treeX2 = tree.x + 60;
+    var treeY1 = tree.y;
+    var treeY2 = tree.y + 96;
+
+    if(chicken.x - 60 >= treeX1 && chicken.x - 60 <= treeX2 && chicken.y >= treeY1 && chicken.y <= treeY2) {
+      return;
+    }
+  }
+
   var tween_1 = game.add.tween(chicken);
   tween_1.to({
     x: chicken.x - 30,
@@ -142,11 +216,28 @@ var hopLeft = function () {
 
   tween_2.onComplete.add(function () {
     pressed = false;
+    checkCarCollision();
   });
 };
 
 var hopRight = function () {
   chicken.frame = 2;
+
+  // Don't hop if chicken will land on tree
+  for(var i = 0; i < trees.length; i++) {
+    var tree = trees[i];
+
+    // Tree coordinates for comparison purposes
+    var treeX1 = tree.x - 60;
+    var treeX2 = tree.x + 60;
+    var treeY1 = tree.y;
+    var treeY2 = tree.y + 96;
+
+    if(chicken.x + 60 >= treeX1 && chicken.x + 60 <= treeX2 && chicken.y >= treeY1 && chicken.y <= treeY2) {
+      return;
+    }
+  }
+
   var tween_1 = game.add.tween(chicken);
   tween_1.to({
     x: chicken.x + 30,
@@ -162,6 +253,7 @@ var hopRight = function () {
 
   tween_2.onComplete.add(function () {
     pressed = false;
+    checkCarCollision();
   });
 };
 
@@ -189,6 +281,9 @@ function update () {
       tween.start();
     }
   }
+
+  // Depth sort
+  group.sort('y', Phaser.Group.SORT_ASCENDING);
 
   // Revive this code later
   // Only check for key events if a key is not already being pressed
