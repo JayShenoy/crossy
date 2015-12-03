@@ -9,6 +9,7 @@
     <script src="js/javascript_compressed.js"></script>
     <script src="js/crossy_blocks.js"></script>
     <script src="js/en.js"></script>
+    <script src="http://code.jquery.com/jquery.min.js"></script>
     <style>
       html, body {
         height: 100%;
@@ -31,7 +32,8 @@
       <tr>
         <td style="width: 20%">
           <div id="game"></div>
-          <button onclick="runCode()">Run</button>
+          <button id="run" onclick="runCode()">Run</button>
+          <button id="reset" onclick="resetButton()" hidden>Reset</button>
         </td>
 
         <td style="width: 80%">
@@ -120,6 +122,10 @@
       }
 
       var runCode = function () {
+        // Hide run button and show reset button
+        $('#run').hide();
+        $('#reset').show();
+
         Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
         Blockly.JavaScript.addReservedWords('highlightBlock');
         var code = Blockly.JavaScript.workspaceToCode(workspace);
@@ -130,10 +136,23 @@
         // Execute code in 50 ms increments
         function nextStep () {
           if (myInterpreter.step()) {
-            window.setTimeout(nextStep, 50);
+            setTimeout(nextStep, 50);
+          }
+          // If chicken hasn't collected all the coins
+          else if(coins.length != 0) {
+            setTimeout(function() {
+              alert('Give it another shot. Make sure to collect all the coins!');
+            }, 800);
           }
         }
         nextStep();
+      };
+
+      // Resets scene, hides reset button, and shows run button
+      var resetButton = function () {
+        gameReset();
+        $('#run').show();
+        $('#reset').hide();
       };
     </script>
   </body>

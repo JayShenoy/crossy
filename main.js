@@ -13,11 +13,21 @@ var game = new Phaser.Game(
   }
 );
 
+// Load map from JSON
+var map;
+$.getJSON('maps/2.json', function(data) {
+  map = data.layout;
+});
+
 var chicken;
+// Initial chicken position for reset
+var chickenPosition;
 var cursors;
 // Storing whether or not a key is already pressed
 var pressed = false;
 var coins = [];
+// Coin positions for reset
+var coinPositions = [];
 var cars = [];
 var trees = [];
 // Group for depth sort
@@ -42,56 +52,110 @@ function preload () {
 
 function create () {
   // Ground
-  var grass = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 48, 'grass-light');
-  grass.anchor.setTo(0.5, 0.5);
-  var road = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 96, 'road-no-lines');
-  road.anchor.setTo(0.5, 1.0);
-  road = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 2, 'road-lines');
-  road.anchor.setTo(0.5, 1.0);
-  road = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 3, 'road-lines');
-  road.anchor.setTo(0.5, 1.0);
-  grass = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 4, 'grass-light');
-  grass.anchor.setTo(0.5, 1.0);
-  road = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 5, 'road-no-lines');
-  road.anchor.setTo(0.5, 1.0);
+  for(var i = 0; i < map.length; i++) {
+    var row = map[i];
+
+    if(row.type === 'road') {
+      // Draw road without lines if bottom row or row below is not road
+      if(i == map.length - 1 || map[i + 1].type !== 'road') {
+        var road = game.add.sprite(GAME_WIDTH / 2, i * 96, 'road-no-lines');
+        road.anchor.setTo(0.5, 0);
+      }
+      else {
+        var road = game.add.sprite(GAME_WIDTH / 2, i * 96, 'road-lines');
+        road.anchor.setTo(0.5, 0);
+      }
+    }
+    else if(row.type === 'grass') {
+      // Draw light grass if no grass above or dark grass above, or if top row
+      if(i == 0 || (map[i - 1].type !== 'grass' && map[i - 1].type !== 'grass-dark') || map[i - 1].type === 'grass-dark') {
+        var grass = game.add.sprite(GAME_WIDTH / 2, i * 96, 'grass-light');
+        grass.anchor.setTo(0.5, 0);
+      }
+      else {
+        var grass = game.add.sprite(GAME_WIDTH / 2, i * 96, 'grass-dark');
+        grass.anchor.setTo(0.5, 0);
+        map[i].type = 'grass-dark';
+      }
+    }
+    else if(row.type === 'water') {
+      var water = game.add.sprite(GAME_WIDTH / 2, i * 96, 'water');
+      water.anchor.setTo(0.5, 0);
+    }
+  }
 
   group = game.add.group();
 
-  // Coins
-  var coin = group.create(GAME_WIDTH / 2, GAME_HEIGHT - 96 * 2 - 48, 'coin');
-  coin.anchor.setTo(0.5);
-  coins.push(coin);
+  // Objects on ground
+  for(var i = 0; i < map.length; i++) {
+    var row = map[i];
 
-  // Cars
-  var car = group.create(90, 0, 'car-blue', 0);
-  car.anchor.setTo(0.5);
-  cars.push(car);
-  car = group.create(GAME_WIDTH - 2 * 60, GAME_HEIGHT - 96 * 2, 'car-green', 1);
-  car.anchor.setTo(0.5);
-  cars.push(car);
-  car = group.create(120, 96 * 2, 'car-orange', 1);
-  car.anchor.setTo(0.5);
-  cars.push(car);
+    if('objects' in row) {
+      var objects = row.objects;
 
-  // Trees
-  var tree = group.create(GAME_WIDTH - 180, 96, 'tree-large');
-  tree.anchor.setTo(0.5);
-  trees.push(tree);
-  tree = group.create(GAME_WIDTH - 60, 96, 'tree-large');
-  tree.anchor.setTo(0.5);
-  trees.push(tree);
-  tree = group.create(120, 96, 'tree-small');
-  tree.anchor.setTo(0.5);
-  trees.push(tree);
-  tree = group.create(60, GAME_HEIGHT - 96, 'tree-large');
-  tree.anchor.setTo(0.5);
-  trees.push(tree);
-  tree = group.create(GAME_WIDTH - 120, GAME_HEIGHT - 96, 'tree-medium');
-  tree.anchor.setTo(0.5);
-  trees.push(tree);
+      // Iterate through objects
+      for(var key in objects) {
+        // Column position
+        var j = parseInt(key);
 
-  chicken = group.create(GAME_WIDTH / 2, GAME_HEIGHT - 10, 'chicken', 0);
-  chicken.anchor.setTo(0.5, 1.0);
+        if(objects[key] === 'car-blue') {
+          var car = group.create(j * 60 + 90, i * 96, 'car-blue');
+          car.anchor.setTo(0.5);
+
+          // Determine car direction
+          if('direction' in row && row.direction === 'left') {
+            car.frame = 0;
+          }
+          else {
+            car.frame = 1;
+          }
+          cars.push(car);
+        }
+        // Any other type of car
+        else if(objects[key].indexOf('car') > -1) {
+          var car = group.create(j * 60 + 120, i * 96, objects[key]);
+          car.anchor.setTo(0.5);
+
+          // Determine car direction
+          if('direction' in row && row.direction === 'left') {
+            car.frame = 0;
+          }
+          else {
+            car.frame = 1;
+          }
+          cars.push(car);
+        }
+        else if(objects[key].indexOf('tree') > -1) {
+          var tree = group.create(j * 60 + 60, i * 96, objects[key]);
+          tree.anchor.setTo(0.5);
+          trees.push(tree);
+        }
+        else if(objects[key] === 'lily-pad') {
+          var pad = group.create(j * 60 + 30, i * 96 + 48, 'lily-pad');
+          pad.anchor.setTo(0.5);
+        }
+        else if(objects[key] === 'log-small') {
+          var log = group.create(j * 60 + 90, i * 96 + 48, 'log-small');
+          log.anchor.setTo(0.5);
+        }
+        else if(objects[key] === 'log-large') {
+          var log = group.create(j * 60 + 150, i * 96 + 48, 'log-large');
+          log.anchor.setTo(0.5);
+        }
+        else if(objects[key] === 'coin') {
+          var coin = group.create(j * 60 + 30, i * 96 + 48, 'coin');
+          coin.anchor.setTo(0.5);
+          coins.push(coin);
+          coinPositions.push([j * 60 + 30, i * 96 + 48]);
+        }
+        else if(objects[key] === 'chicken') {
+          chicken = group.create(j * 60 + 30, i * 96 + 86, 'chicken');
+          chicken.anchor.setTo(0.5, 1.0);
+          chickenPosition = [j * 60 + 30, i * 96 + 86];
+        }
+      }
+    }
+  }
 
   group.sort();
 
@@ -107,6 +171,9 @@ var checkCarCollision = function () {
     if(Phaser.Rectangle.intersects(chicken.getBounds(), car.getBounds())) {
       if(chicken.y >= car.y) {
         chicken.frame = 4;
+        setTimeout(function () {
+          alert('Give it another shot. Make sure to collect all the coins!');
+        }, 800);
       }
     }
   }
@@ -257,6 +324,34 @@ var hopRight = function () {
   });
 };
 
+var gameReset = function () {
+  // Pause game so it doesn't keep checking for coin collisions
+  game.paused = true;
+
+  // Reset chicken
+  chicken.frame = 0;
+  chicken.x = chickenPosition[0];
+  chicken.y = chickenPosition[1];
+
+  // Remove all coins
+  for(var i = 0; i < coins.length; i++) {
+    var coin = coins[i];
+    coins.splice(i, 1);
+    coin.kill();
+  }
+
+  // Reset coins
+  for(var i = 0; i < coinPositions.length; i++) {
+    var coinPos = coinPositions[i];
+    var coin = group.create(coinPos[0], coinPos[1], 'coin');
+    coin.anchor.setTo(0.5);
+    coins.push(coin);
+  }
+
+  // Unpause game after a slight delay to avoid coin collision
+  setTimeout(function() { game.paused = false; }, 100);
+};
+
 function update () {
   // Check if chicken collided with coin
   for(var i = 0; i < coins.length; i++) {
@@ -275,7 +370,11 @@ function update () {
         // Check if all coins have been collected
         if (coins.length == 0) {
           game.lockRender = true;
-          alert('Level complete!');
+
+          // Generate code
+          Blockly.JavaScript.STATEMENT_PREFIX = '';
+          var code = Blockly.JavaScript.workspaceToCode(workspace);
+          alert('Level complete! You wrote the following code:\n' + code);
         }
       });
       tween.start();
