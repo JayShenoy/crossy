@@ -1,0 +1,50 @@
+{
+  "layout":
+  [
+    {
+      "type": "water",
+      "objects":
+      {
+        "4": "log-small",
+        "5": "coin"
+      }
+    },
+    {
+      "type": "water",
+      "objects":
+      {
+        "3": "log-small"
+      }
+    },
+    {
+      "type": "water",
+      "objects":
+      {
+        "2": "log-small"
+      }
+    },
+    {
+      "type": "water",
+      "objects":
+      {
+        "1": "log-small"
+      }
+    },
+    {
+      "type": "water",
+      "objects":
+      {
+        "0": "log-small"
+      }
+    },
+    {
+      "type": "grass",
+      "objects":
+      {
+        "0": "chicken",
+        "4": "tree-medium",
+        "6": "tree-large"
+      }
+    }
+  ]
+}

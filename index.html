@@ -121,10 +121,13 @@
         interpreter.setProperty(scope, 'highlightBlock', interpreter.createNativeFunction(wrapper));
       }
 
+      var isReset = false;
+
       var runCode = function () {
         // Hide run button and show reset button
         $('#run').hide();
         $('#reset').show();
+        isReset = false;
 
         Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
         Blockly.JavaScript.addReservedWords('highlightBlock');
@@ -135,13 +138,21 @@
 
         // Execute code in 50 ms increments
         function nextStep () {
+          // Exit if currently resetting or chicken is dead
+          if(isReset || chickenDead) {
+            return;
+          }
+
           if (myInterpreter.step()) {
             setTimeout(nextStep, 50);
           }
           // If chicken hasn't collected all the coins
-          else if(coins.length != 0) {
+          else if(numCoins != 0) {
             setTimeout(function() {
-              alert('Give it another shot. Make sure to collect all the coins!');
+              // Don't alert if chicken is already dead
+              if(!chickenDead) {
+                alert('Give it another shot. Make sure to collect all the coins!');
+              }
             }, 800);
           }
         }
@@ -150,7 +161,10 @@
 
       // Resets scene, hides reset button, and shows run button
       var resetButton = function () {
-        gameReset();
+        isReset = true;
+
+        // Wait a bit for execution to terminate before resetting objects
+        setTimeout(gameReset, 350);
         $('#run').show();
         $('#reset').hide();
       };

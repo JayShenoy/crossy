@@ -15,23 +15,27 @@ var game = new Phaser.Game(
 
 // Load map from JSON
 var map;
-$.getJSON('maps/2.json', function(data) {
+$.getJSON('maps/6.json', function(data) {
   map = data.layout;
 });
 
 var chicken;
 // Initial chicken position for reset
 var chickenPosition;
+var chickenDead = false;
 var cursors;
 // Storing whether or not a key is already pressed
 var pressed = false;
 var coins = [];
-// Coin positions for reset
-var coinPositions = [];
+var numCoins = 0;
 var cars = [];
 var trees = [];
 // Group for depth sort
 var group;
+var waterRows = [];
+var logs = [];
+// Water overlay for sinking effect
+var waterOverlay;
 
 function preload () {
   game.load.spritesheet('chicken', 'assets/chicken.png', 58, 75);
@@ -48,6 +52,11 @@ function preload () {
   game.load.image('tree-small', 'assets/tree-small.png');
   game.load.image('tree-medium', 'assets/tree-medium.png');
   game.load.image('tree-large', 'assets/tree-large.png');
+  game.load.image('water', 'assets/water.png');
+  game.load.image('lily-pad', 'assets/lily-pad.png');
+  game.load.image('log-small', 'assets/log-small.png');
+  game.load.image('log-large', 'assets/log-large.png');
+  game.load.spritesheet('splash', 'assets/splash.png', 60, 96);
 }
 
 function create () {
@@ -81,6 +90,7 @@ function create () {
     else if(row.type === 'water') {
       var water = game.add.sprite(GAME_WIDTH / 2, i * 96, 'water');
       water.anchor.setTo(0.5, 0);
+      waterRows.push(water);
     }
   }
 
@@ -135,18 +145,22 @@ function create () {
           pad.anchor.setTo(0.5);
         }
         else if(objects[key] === 'log-small') {
-          var log = group.create(j * 60 + 90, i * 96 + 48, 'log-small');
+          var log = group.create(j * 60 + 60, i * 96 + 48, 'log-small');
           log.anchor.setTo(0.5);
+          logs.push(log);
         }
         else if(objects[key] === 'log-large') {
           var log = group.create(j * 60 + 150, i * 96 + 48, 'log-large');
           log.anchor.setTo(0.5);
+          logs.push(log);
         }
         else if(objects[key] === 'coin') {
           var coin = group.create(j * 60 + 30, i * 96 + 48, 'coin');
           coin.anchor.setTo(0.5);
+          // Add "collected" attribute
+          coin.collected = false;
           coins.push(coin);
-          coinPositions.push([j * 60 + 30, i * 96 + 48]);
+          numCoins++;
         }
         else if(objects[key] === 'chicken') {
           chicken = group.create(j * 60 + 30, i * 96 + 86, 'chicken');
@@ -171,10 +185,44 @@ var checkCarCollision = function () {
     if(Phaser.Rectangle.intersects(chicken.getBounds(), car.getBounds())) {
       if(chicken.y >= car.y) {
         chicken.frame = 4;
-        setTimeout(function () {
+        chickenDead = true;
+
+        setTimeout(function() {
           alert('Give it another shot. Make sure to collect all the coins!');
         }, 800);
       }
+    }
+  }
+};
+
+var checkWaterCollision = function() {
+  for(var i = 0; i < waterRows.length; i++) {
+    var water = waterRows[i];
+    // If chicken is on water
+    if(Phaser.Rectangle.intersects(chicken.getBounds(), water.getBounds())) {
+      // Check if chicken is on top of log
+      for(var j = 0; j < logs.length; j++) {
+        var log = logs[j];
+        // If log is on this row of water
+        if(log.y == water.y + 48) {
+          if(!Phaser.Rectangle.intersects(chicken.getBounds(), log.getBounds())) {
+            chickenDead = true;
+
+            // Overlaying water to give the appearance of sinking
+            waterOverlay = game.add.sprite(chicken.x, water.y + 96, 'splash');
+            waterOverlay.anchor.setTo(0.5, 1.0);
+            var sinkingAnimation = waterOverlay.animations.add('sink');
+            waterOverlay.animations.play('sink', 20);
+
+            setTimeout(function() {
+              alert('Give it another shot. Make sure to collect all the coins!');
+            }, 800);
+          }
+        }
+      }
+
+      // Return because chicken cannot be on any other row
+      return;
     }
   }
 };
@@ -212,6 +260,7 @@ var hopForward = function () {
   tween_2.onComplete.add(function () {
     pressed = false;
     checkCarCollision();
+    checkWaterCollision();
   });
 };
 
@@ -247,6 +296,7 @@ var hopBack = function () {
   tween_2.onComplete.add(function () {
     pressed = false;
     checkCarCollision();
+    checkWaterCollision();
   });
 };
 
@@ -284,6 +334,7 @@ var hopLeft = function () {
   tween_2.onComplete.add(function () {
     pressed = false;
     checkCarCollision();
+    checkWaterCollision();
   });
 };
 
@@ -321,63 +372,57 @@ var hopRight = function () {
   tween_2.onComplete.add(function () {
     pressed = false;
     checkCarCollision();
+    checkWaterCollision();
   });
 };
 
 var gameReset = function () {
-  // Pause game so it doesn't keep checking for coin collisions
-  game.paused = true;
-
   // Reset chicken
   chicken.frame = 0;
+  chickenDead = false;
   chicken.x = chickenPosition[0];
   chicken.y = chickenPosition[1];
 
-  // Remove all coins
-  for(var i = 0; i < coins.length; i++) {
-    var coin = coins[i];
-    coins.splice(i, 1);
-    coin.kill();
+  // Remove water overlay
+  if(waterOverlay instanceof Phaser.Sprite) {
+    waterOverlay.destroy();
   }
 
-  // Reset coins
-  for(var i = 0; i < coinPositions.length; i++) {
-    var coinPos = coinPositions[i];
-    var coin = group.create(coinPos[0], coinPos[1], 'coin');
-    coin.anchor.setTo(0.5);
-    coins.push(coin);
-  }
-
-  // Unpause game after a slight delay to avoid coin collision
-  setTimeout(function() { game.paused = false; }, 100);
+  // Delay to avoid collisions with chicken
+  setTimeout(function() {
+    for(var i = 0; i < coins.length; i++) {
+      coins[i].alpha = 1;
+      coins[i].collected = false;
+    }
+    numCoins = coins.length;
+  }, 20);
 };
 
 function update () {
   // Check if chicken collided with coin
   for(var i = 0; i < coins.length; i++) {
     var coin = coins[i];
-    if(Phaser.Rectangle.intersects(chicken.getBounds(), coin.getBounds())) {
-      coins.splice(i, 1);
-
-      // Fade coin out
-      var tween = game.add.tween(coin);
-      tween.to({
-        alpha: 0
-      }, 500, Phaser.Easing.Quadratic.Out);
-      tween.onComplete.add(function () {
-        coin.kill();
-
-        // Check if all coins have been collected
-        if (coins.length == 0) {
-          game.lockRender = true;
-
-          // Generate code
-          Blockly.JavaScript.STATEMENT_PREFIX = '';
-          var code = Blockly.JavaScript.workspaceToCode(workspace);
-          alert('Level complete! You wrote the following code:\n' + code);
-        }
-      });
-      tween.start();
+    // Only check coins that have not already been collected
+    if(!coin.collected) {
+      if(Phaser.Rectangle.intersects(chicken.getBounds(), coin.getBounds())) {
+        coin.collected = true;
+        numCoins--;
+        // Fade coin out
+        var tween = game.add.tween(coin);
+        tween.to({
+          alpha: 0
+        }, 500, Phaser.Easing.Quadratic.Out);
+        tween.onComplete.add(function () {
+          // Check if all coins have been collected
+          if (numCoins == 0) {
+            // Generate code
+            Blockly.JavaScript.STATEMENT_PREFIX = '';
+            var code = Blockly.JavaScript.workspaceToCode(workspace);
+            alert('Level complete! You wrote the following code:\n' + code);
+          }
+        });
+        tween.start();
+      }
     }
   }
 
