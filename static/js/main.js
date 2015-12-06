@@ -13,12 +13,6 @@ var game = new Phaser.Game(
   }
 );
 
-// Load map from JSON
-var map;
-$.getJSON('maps/6.json', function(data) {
-  map = data.layout;
-});
-
 var chicken;
 // Initial chicken position for reset
 var chickenPosition;
@@ -38,25 +32,25 @@ var logs = [];
 var waterOverlay;
 
 function preload () {
-  game.load.spritesheet('chicken', 'assets/chicken.png', 58, 75);
-  game.load.image('coin', 'assets/coin.png');
-  game.load.image('grass-light', 'assets/grass-light.png');
-  game.load.image('grass-dark', 'assets/grass-dark.png');
-  game.load.image('road-lines', 'assets/road-lines.png');
-  game.load.image('road-no-lines', 'assets/road-no-lines.png');
-  game.load.spritesheet('car-yellow', 'assets/car-yellow.png', 240, 192);
-  game.load.spritesheet('car-purple', 'assets/car-purple.png', 240, 192);
-  game.load.spritesheet('car-orange', 'assets/car-orange.png', 240, 192);
-  game.load.spritesheet('car-green', 'assets/car-green.png', 240, 192);
-  game.load.spritesheet('car-blue', 'assets/car-blue.png', 180, 192);
-  game.load.image('tree-small', 'assets/tree-small.png');
-  game.load.image('tree-medium', 'assets/tree-medium.png');
-  game.load.image('tree-large', 'assets/tree-large.png');
-  game.load.image('water', 'assets/water.png');
-  game.load.image('lily-pad', 'assets/lily-pad.png');
-  game.load.image('log-small', 'assets/log-small.png');
-  game.load.image('log-large', 'assets/log-large.png');
-  game.load.spritesheet('splash', 'assets/splash.png', 60, 96);
+  game.load.spritesheet('chicken', '/crossyAsset/chicken.png', 58, 75);
+  game.load.image('coin', '/crossyAsset/coin.png');
+  game.load.image('grass-light', '/crossyAsset/grass-light.png');
+  game.load.image('grass-dark', '/crossyAsset/grass-dark.png');
+  game.load.image('road-lines', '/crossyAsset/road-lines.png');
+  game.load.image('road-no-lines', '/crossyAsset/road-no-lines.png');
+  game.load.spritesheet('car-yellow', '/crossyAsset/car-yellow.png', 240, 192);
+  game.load.spritesheet('car-purple', '/crossyAsset/car-purple.png', 240, 192);
+  game.load.spritesheet('car-orange', '/crossyAsset/car-orange.png', 240, 192);
+  game.load.spritesheet('car-green', '/crossyAsset/car-green.png', 240, 192);
+  game.load.spritesheet('car-blue', '/crossyAsset/car-blue.png', 180, 192);
+  game.load.image('tree-small', '/crossyAsset/tree-small.png');
+  game.load.image('tree-medium', '/crossyAsset/tree-medium.png');
+  game.load.image('tree-large', '/crossyAsset/tree-large.png');
+  game.load.image('water', '/crossyAsset/water.png');
+  game.load.image('lily-pad', '/crossyAsset/lily-pad.png');
+  game.load.image('log-small', '/crossyAsset/log-small.png');
+  game.load.image('log-large', '/crossyAsset/log-large.png');
+  game.load.spritesheet('splash', '/crossyAsset/splash.png', 60, 96);
 }
 
 function create () {
@@ -188,7 +182,8 @@ var checkCarCollision = function () {
         chickenDead = true;
 
         setTimeout(function() {
-          alert('Give it another shot. Make sure to collect all the coins!');
+          $('#modalContent').html('You hit a car! Give it another shot.<br><br><button type="button" class="btn btn-primary" data-dismiss="modal">Try Again</button>');
+          $('#myModal').modal();
         }, 800);
       }
     }
@@ -215,8 +210,14 @@ var checkWaterCollision = function() {
             waterOverlay.animations.play('sink', 20);
 
             setTimeout(function() {
-              alert('Give it another shot. Make sure to collect all the coins!');
+              $('#modalContent').html('Looks like you sunk! Give it another shot.<br><br><button type="button" class="btn btn-primary" data-dismiss="modal">Try Again</button>');
+              $('#myModal').modal();
             }, 800);
+          }
+          else {
+            console.log('Log ' + j + ' Bounds: ' + log.getBounds());
+            console.log('Chicken: ' + chicken.getBounds());
+            console.log(Phaser.Rectangle.intersects(chicken.getBounds(), log.getBounds()));
           }
         }
       }
@@ -320,14 +321,14 @@ var hopLeft = function () {
 
   var tween_1 = game.add.tween(chicken);
   tween_1.to({
-    x: chicken.x - 30,
+    x: chicken.x - 58,
     y: chicken.y - 8
   }, 150, Phaser.Easing.Quadratic.Out);
   var tween_2 = game.add.tween(chicken);
   tween_2.to({
     x: chicken.x - 60,
     y: chicken.y
-  }, 150, Phaser.Easing.Quadratic.In);
+  }, 100, Phaser.Easing.Quadratic.In);
   tween_1.chain(tween_2);
   tween_1.start();
 
@@ -358,7 +359,7 @@ var hopRight = function () {
 
   var tween_1 = game.add.tween(chicken);
   tween_1.to({
-    x: chicken.x + 30,
+    x: chicken.x + 58,
     y: chicken.y - 8
   }, 150, Phaser.Easing.Quadratic.Out);
   var tween_2 = game.add.tween(chicken);
@@ -418,7 +419,35 @@ function update () {
             // Generate code
             Blockly.JavaScript.STATEMENT_PREFIX = '';
             var code = Blockly.JavaScript.workspaceToCode(workspace);
-            alert('Level complete! You wrote the following code:\n' + code);
+            // Convert JavaScript special characters to HTML
+            code = code.replace(new RegExp('\r?\n', 'g'), '<br>');
+
+            // Check that repeat block was used if level 5 or 6
+            if((level == '5' || level == '7') && code.indexOf('for') == -1) {
+              $('#modalContent').html('You collected the coin, but try solving the level again using the repeat block.<br><br><button type="button" class="btn btn-primary" data-dismiss="modal">Try Again</button>');
+              $('#myModal').modal();
+            }
+            else {
+              // Store level completion in local storage
+              if(sessionStorage.progress) {
+                var progress = JSON.parse(sessionStorage.progress);
+                progress.completedLevels.push(level);
+                sessionStorage.progress = JSON.stringify(progress);
+              }
+              else {
+                // Create new progress object to store completed levels
+                var progress = {
+                  'completedLevels': [level]
+                }
+                sessionStorage.progress = JSON.stringify(progress);
+              }
+              // Fill in circle corresponding to current level
+              var $circle = $('#circle' + level);
+              $circle.attr('fill', '#E6C35A');
+
+              $('#modalContent').html('Level complete! You wrote the following code:<br><br>' + code + '<br><a href="/crossy/' + (parseInt(level) + 1) + '" role="button" class="btn btn-success">Next</button>');
+              $('#myModal').modal();
+            }
           }
         });
         tween.start();

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hour of Code - Crossy</title>
+    <script src="{{ url_for('static', filename='js/phaser.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/acorn_interpreter.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/blockly_compressed.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/blocks_compressed.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/javascript_compressed.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/crossy_blocks.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/en.js') }}"></script>
+    <script src="http://code.jquery.com/jquery.min.js"></script>
+    <link href='https://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        overflow: hidden;
+        background-color: #F5F5F5;
+      }
+      table {
+        width: 98%;
+      }
+      #blocklyArea {
+        height: 100%;
+      }
+      h1 {
+        font-size: 2vw;
+        font-family: 'Press Start 2P', cursive;
+      }
+    </style>
+  </head>
+  <body>
+    <table align="center">
+      <tr>
+        <td style="width: 50%">
+          <h1>Hour of Crossy Code</h1>
+        </td>
+        <td style="width: 30%">
+          <div id="levelNavigator"></div>
+        </td>
+        <td style="width: 20%">
+          <button type="button" class="btn btn-link" data-toggle="modal" data-target="#copyrightModal">Copyright</button>
+        </td>
+      </tr>
+    </table>
+    <table align="center" style="height: 100%">
+      <tr>
+        <td style="width: 38%; vertical-align:top">
+          <div id="game"></div>
+          <button id="run" class="btn btn-success" onclick="runCode()">Run</button>
+          <button id="reset" class="btn btn-primary" onclick="resetButton()" style="display:none">Reset</button>
+          <div id="taskArea" style="overflow:auto">Task: {{ task }}</div>
+        </td>
+
+        <td style="width: 58%; vertical-align:top">
+          <div>
+            <div style="background-color: #0893C2; width: 150px; color: #FFF; text-align: center; float: left">Toolbox</div>
+            <div style="background-color: #0893C2; color: #FFF; text-align: center">Workspace</div>
+          </div>
+          <div id="blocklyArea"></div>
+        </td>
+      </tr>
+    </table>
+
+    <script>
+    // Store level for other scripts
+    var level = '{{ level }}';
+
+    // Show video and/or task modals
+    $(document).ready(function() {
+      if(level == '1') {
+        $('#videoModalContent').prepend('<div class="embed-responsive embed-responsive-16by9"><iframe class="embed-responsive-item" src="https://www.youtube.com/embed/AQNLwuXvfsU?autoplay=1"></iframe></div>');
+        $('#videoModal').modal();
+      }
+      else if(level == '5') {
+        $('#videoModalContent').prepend('<div class="embed-responsive embed-responsive-16by9"><iframe class="embed-responsive-item" src="https://www.youtube.com/embed/QGuNTexwqmI?autoplay=1"></iframe></div>');
+        $('#videoModal').modal();
+      }
+      else {
+        $('#taskModalContent').prepend('<h4>{{ task }}</h4>');
+        $('#taskModal').modal();
+      }
+    });
+
+    // Load map from JSON
+    var map;
+    $.getJSON('/map/' + level, function(data) {
+      map = data.layout;
+    });
+    </script>
+    <script src="{{ url_for('static', filename='js/level.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <div id="blocklyDiv" style="position: absolute"></div>
+    <xml id="toolbox" style="display: none">
+      <block type="hop">
+        <field name="direction" value="Forward">forward</field>
+      </block>
+      <block type="hop">
+        <field name="direction">back</field>
+      </block>
+      <block type="hop">
+        <field name="direction">left</field>
+      </block>
+      <block type="hop">
+        <field name="direction">right</field>
+      </block>
+      <!-- Only display repeat loop block if on fifth or sixth levels -->
+      {% if level == '5' or level == '7' %}
+      <block type="repeat_loop"></block>
+      {% endif %}
+    </xml>
+    <script>
+      var blocklyArea = document.getElementById('blocklyArea');
+      var blocklyDiv = document.getElementById('blocklyDiv');
+      var workspace = Blockly.inject(blocklyDiv, {toolbox: document.getElementById('toolbox')});
+
+      // Show previously-written or default code
+      var xml_text;
+      if(sessionStorage.savedCode) {
+        var savedCode = JSON.parse(sessionStorage.savedCode);
+        if(savedCode[level]) {
+          xml_text = savedCode[level];
+        }
+        else {
+          xml_text = '{{ defaultCode }}';
+        }
+      }
+      else {
+        xml_text = '{{ defaultCode }}';
+      }
+      var xml = Blockly.Xml.textToDom(xml_text);
+      Blockly.Xml.domToWorkspace(workspace, xml);
+
+      var onresize = function(e) {
+        // Compute the absolute coordinates and dimensions of blocklyArea.
+        var element = $('#blocklyArea');
+        var x = element.offset().left;
+        var y = element.offset().top;
+        // Position blocklyDiv over blocklyArea.
+        blocklyDiv.style.left = x + 'px';
+        blocklyDiv.style.top = y + 'px';
+        blocklyDiv.style.width = blocklyArea.offsetWidth + 'px';
+        blocklyDiv.style.height = blocklyArea.offsetHeight + 'px';
+
+        // Scale game
+        var $canvas = $('#game').children('canvas');
+        var canvasWidth = window.innerWidth * 3 / 8;
+        var canvasHeight = canvasWidth * 16 / 15;
+        $canvas.css('width', canvasWidth + 'px');
+        $canvas.css('height', canvasHeight + 'px');
+      };
+      window.addEventListener('resize', onresize, false);
+      $(window).load(function() {
+        onresize();
+      });
+
+      function initApi(interpreter, scope) {
+        // Add an API function for the hopForward() block
+        var wrapper = function () {
+          return interpreter.createPrimitive(hopForward());
+        };
+        interpreter.setProperty(scope, 'hopForward', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for the hopBack() block
+        wrapper = function () {
+          return interpreter.createPrimitive(hopBack());
+        };
+        interpreter.setProperty(scope, 'hopBack', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for the hopLeft() block
+        wrapper = function () {
+          return interpreter.createPrimitive(hopLeft());
+        };
+        interpreter.setProperty(scope, 'hopLeft', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for the hopRight() block
+        wrapper = function () {
+          return interpreter.createPrimitive(hopRight());
+        };
+        interpreter.setProperty(scope, 'hopRight', interpreter.createNativeFunction(wrapper));
+
+        // Add an API function for highlighting blocks
+        wrapper = function (id) {
+          id = id ? id.toString() : '';
+          return interpreter.createPrimitive(workspace.highlightBlock(id));
+        };
+        interpreter.setProperty(scope, 'highlightBlock', interpreter.createNativeFunction(wrapper));
+      }
+
+      var isReset = false;
+
+      var runCode = function () {
+        // Hide run button and show reset button
+        $('#run').hide();
+        $('#reset').show();
+        isReset = false;
+
+        Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
+        Blockly.JavaScript.addReservedWords('highlightBlock');
+        var code = Blockly.JavaScript.workspaceToCode(workspace);
+        var myInterpreter = new Interpreter(code, initApi);
+        // Enable highlighting
+        workspace.traceOn(true);
+
+        storeCode();
+
+        // Execute code in 50 ms increments
+        function nextStep () {
+          // Exit if currently resetting or chicken is dead
+          if(isReset || chickenDead) {
+            return;
+          }
+
+          if (myInterpreter.step()) {
+            setTimeout(nextStep, 30);
+          }
+          // If chicken hasn't collected all the coins
+          else if(numCoins != 0) {
+            setTimeout(function() {
+              // Don't alert if chicken is already dead
+              if(!chickenDead) {
+                $('#modalContent').html('Give it another shot. Make sure to collect all the coins!<br><br><button type="button" class="btn btn-primary" data-dismiss="modal">Try Again</button>');
+                $('#myModal').modal();
+              }
+            }, 800);
+          }
+        }
+        nextStep();
+      };
+
+      // Resets scene, hides reset button, and shows run button
+      var resetButton = function () {
+        isReset = true;
+
+        // Wait a bit for execution to terminate before resetting objects
+        setTimeout(gameReset, 350);
+        $('#run').show();
+        $('#reset').hide();
+      };
+
+      // Stores code in local storage
+      var storeCode = function() {
+        var xml = Blockly.Xml.workspaceToDom(workspace);
+        var xml_text = Blockly.Xml.domToText(xml);
+
+        if(sessionStorage.savedCode) {
+          var savedCode = JSON.parse(sessionStorage.savedCode);
+          savedCode[level] = xml_text;
+          sessionStorage.savedCode = JSON.stringify(savedCode);
+        }
+        else {
+          // Create new object to store previously-written code
+          var savedCode = {};
+          savedCode[level] = xml_text;
+          sessionStorage.savedCode = JSON.stringify(savedCode);
+        }
+      };
+
+      // Stops video when modal is closed
+      var stopVideo = function() {
+        // Delay to allow modal to close properly
+        setTimeout(function() {
+          $('#videoModal').html('');
+        }, 10);
+      };
+    </script>
+
+    <!-- Generic Modal -->
+    <div class="modal" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div id="modalContent" class="modal-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">Level {{ level }}</h2>
+          </div>
+          <div id="taskModalContent" class="modal-body">
+            <br>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copyright Modal -->
+    <div class="modal" id="copyrightModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Copyright Information</h2>
+          </div>
+          <div class="modal-body">
+            Crossy Road&trade; & &copy; 2015 Hipster Whale. All rights reserved.
+            <br>
+            <br>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div class="modal" id="videoModal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div id="videoModalContent" class="modal-body">
+            <br>
+            <button type="button" class="btn btn-success" data-dismiss="modal" onclick="stopVideo()">Let's code!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

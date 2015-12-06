@@ -1,0 +1,50 @@
+{
+  "layout":
+  [
+    {
+      "type": "grass",
+      "objects":
+      {
+        "3": "tree-medium",
+        "7": "coin"
+      }
+    },
+    {
+      "type": "grass",
+      "objects":
+      {
+        "5": "tree-medium"
+      }
+    },
+    {
+      "type": "grass",
+      "objects":
+      {
+        "1": "tree-large",
+        "8": "tree-small"
+      }
+    },
+    {
+      "type": "road",
+      "objects":
+      {
+        "3": "car-orange"
+      }
+    },
+    {
+      "type": "road",
+      "direction": "left",
+      "objects":
+      {
+        "1": "car-green"
+      }
+    },
+    {
+      "type": "road",
+      "objects":
+      {
+        "7": "chicken"
+      }
+    }
+  ]
+}

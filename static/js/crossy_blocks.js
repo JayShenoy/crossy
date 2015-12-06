@@ -30,3 +30,25 @@ Blockly.JavaScript['hop'] = function(block) {
   var code = 'hop' + dropdown_direction + '();\n';
   return code;
 };
+
+Blockly.Blocks['repeat_loop'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("repeat")
+        .appendField(new Blockly.FieldDropdown([["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"], ["6", "6"], ["7", "7"], ["8", "8"], ["9", "9"], ["10", "10"]]), "times")
+        .appendField("times");
+    this.appendStatementInput("code_to_loop")
+        .appendField("do");
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setColour(345);
+  }
+};
+
+Blockly.JavaScript['repeat_loop'] = function(block) {
+  var dropdown_times = block.getFieldValue('times');
+  var times = parseInt(dropdown_times);
+  var statements_code_to_loop = Blockly.JavaScript.statementToCode(block, 'code_to_loop');
+  var code = 'for(var i = 0; i < ' + times + '; i++) {\n' + statements_code_to_loop + '}\n';
+  return code;
+};
