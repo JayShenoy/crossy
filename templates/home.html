@@ -1,0 +1,31 @@
+{% include 'header.html' %}
+
+<table align="center">
+  <tr>
+    <td style="width: 50%">
+      <h1><a href="/" style="text-decoration:none">Hour of Crossy Code</a></h1>
+    </td>
+    <td style="width: 30%">
+      <div id="levelNavigator"></div>
+    </td>
+    <td style="width: 20%">
+      <button type="button" class="btn btn-link" data-toggle="modal" data-target="#copyrightModal">Copyright</button>
+    </td>
+  </tr>
+</table>
+
+<div class="container-fluid" style="background-color:#2283A3; height:100%">
+  <div class="row">
+    <div class="col-md-12 text-center" style="color:white">
+      <br><br><br>
+      <h2>Complete an Hour of Code</h2>
+      <h2>by exploring the world of Crossy Road!</h2>
+      <br><br><br>
+      <a href="/crossy/1"><img class="img-rounded img-responsive center-block" src="{{ url_for('static', filename='assets/crossy-banner.png') }}"></a>
+      <br>
+      <p>More tutorials coming soon!</p>
+    </div>
+  </div>
+</div>
+
+{% include 'footer.html' %}

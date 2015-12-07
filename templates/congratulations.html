@@ -1,77 +1,74 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Hour of Code - Crossy</title>
-    <script src="{{ url_for('static', filename='js/phaser.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/acorn_interpreter.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/blockly_compressed.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/blocks_compressed.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/javascript_compressed.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/crossy_blocks.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/en.js') }}"></script>
-    <script src="http://code.jquery.com/jquery.min.js"></script>
-    <link href='https://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-      }
-      body {
-        overflow: hidden;
-        background-color: #F5F5F5;
-      }
-      table {
-        width: 98%;
-      }
-      h1 {
-        font-size: 2vw;
-        font-family: 'Press Start 2P', cursive;
-      }
-    </style>
-  </head>
-  <body>
-    <table align="center">
-      <tr>
-        <td style="width: 50%">
-          <h1>Hour of Crossy Code</h1>
-        </td>
-        <td style="width: 30%">
-          <div id="levelNavigator"></div>
-        </td>
-        <td style="width: 20%">
-          <button type="button" class="btn btn-link" data-toggle="modal" data-target="#copyrightModal">Copyright</button>
-        </td>
-      </tr>
-    </table>
-    <div container="fluid">
-      <div class="row">
-        <div class="col-md-12 text-center">
-          <h3>Congratulations!</h3>
-          <h5>You finished the Hour of Code.</h5>
-          <h5>We'll be updating this lesson in a few days with new levels (such as creating your very own Crossy game), so check back soon.</h5>
-        </div>
+{% include 'header.html' %}
+
+<table align="center">
+  <tr>
+    <td style="width: 50%">
+      <h1><a href="/" style="text-decoration:none">Hour of Crossy Code</a></h1>
+    </td>
+    <td style="width: 30%">
+      <div id="levelNavigator"></div>
+    </td>
+    <td style="width: 20%">
+      <button type="button" class="btn btn-link" data-toggle="modal" data-target="#copyrightModal">Copyright</button>
+    </td>
+  </tr>
+</table>
+<div container="fluid">
+  <div class="row">
+    <div class="col-md-12 text-center">
+      <h3>Congratulations!</h3>
+      <h5>You finished the Hour of Code.</h5>
+      <p>We'll be updating this lesson in a few days with new levels (such as creating your very own Crossy game), so check back soon.</p>
+      <p>Enter your email address below to receive your <strong>own, printable certificate</strong> and to be notified when we release extra levels!</p>
+    </div>
+  </div>
+  <form id="personalInfo">
+    <div class="row">
+      <div class="col-xs-3 col-xs-offset-3">
+        <input class="form-control" placeholder="First Name" name="fName">
+      </div>
+      <div class="col-xs-3">
+        <input class="form-control" placeholder="Last Name" name="lName">
       </div>
     </div>
-
-    <script src="{{ url_for('static', filename='js/level.js') }}"></script>
-
-    <!-- Copyright Modal -->
-    <div class="modal" id="copyrightModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h4 class="modal-title">Copyright Information</h2>
-          </div>
-          <div class="modal-body">
-            Crossy Road&trade; & &copy; 2015 Hipster Whale. All rights reserved.
-            <br>
-            <br>
-            <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
-          </div>
-        </div>
+    <br>
+    <div class="row">
+      <div class="col-xs-6 col-xs-offset-3">
+        <input class="form-control col-xs-6" placeholder="Email" name="email">
       </div>
     </div>
-  </body>
-</html>
+    <br>
+    <div class="row">
+      <div class="col-md-12 text-center">
+        <button type="submit" class="btn btn-success">Submit</button>
+      </div>
+    </div>
+  </form>
+  <br>
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3">
+      <div class="alert alert-success" id="thanksAlert" style="display:none">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <strong>Thank you!</strong> We will send your certificate shortly.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/level.js') }}"></script>
+
+<script>
+// AJAX for submitting name and email
+var submitInfo = function() {
+  var $form = $(this);
+  var formData = $form.serialize();
+  $.post('/newUser', formData, function(data) {
+    $('#thanksAlert').show();
+  });
+
+  return false;
+};
+$('#personalInfo').submit(submitInfo);
+</script>
+
+{% include 'footer.html' %}

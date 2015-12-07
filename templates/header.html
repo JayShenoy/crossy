@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hour of Crossy Code</title>
+    <script src="{{ url_for('static', filename='js/phaser.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/acorn_interpreter.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/blockly_compressed.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/blocks_compressed.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/javascript_compressed.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/crossy_blocks.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/en.js') }}"></script>
+    <script src="http://code.jquery.com/jquery.min.js"></script>
+    <link href='https://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        {% if not home %}
+        overflow: hidden;
+        {% endif %}
+        background-color: #F5F5F5;
+      }
+      table {
+        width: 98%;
+      }
+      h1 {
+        font-size: 2vw;
+        font-family: 'Press Start 2P', cursive;
+      }
+    </style>
+  </head>
+  <body>
