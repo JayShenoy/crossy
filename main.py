@@ -32,15 +32,9 @@ def home():
 @app.route('/crossy/<level>')
 def crossy(level):
     if level == '8':
-        return render_template('congratulations.html')
+        return redirect('https://code.org/api/hour/finish')
     else:
         return render_template('crossy.html', level=level, defaultCode=default_code[level], task=tasks[level])
-
-@app.route('/newUser', methods=['POST'])
-def new_user():
-    new_user = User(name='%s %s' % (request.form['fName'], request.form['lName']), email=request.form['email'])
-    new_user.put()
-    return 'Success!'
 
 @app.route('/crossyAsset/<assetname>')
 def crossyAsset(assetname):

@@ -9,6 +9,10 @@ var setupLevels = function() {
       $levelNavigator.append($node);
   }
 
+  // Add link for completion screen
+  var $finishButton = $('<button class="btn btn-link" onclick="window.location = \'https://code.org/api/hour/finish\';" style="font-size:1vw">I’m finished with my Hour of Code</a>');
+  $levelNavigator.append($finishButton);
+
   // Fill in circles that have been completed
   if(sessionStorage.progress) {
     var progress = JSON.parse(sessionStorage.progress);
